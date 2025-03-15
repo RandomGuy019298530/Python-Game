@@ -21,6 +21,7 @@ class ChoiceScreen(tk.Tk):
         self.current_selection = 0     # Index for current choice
         self.typing = False            # Flag to ignore key input during text animation
         self.animation_timer = None    # Reference to animation timer for cleanup
+        self.safety_timer = None       # Reference to safety timer for cleanup
 
         # Load the background image
         self.load_background_image()
@@ -61,6 +62,7 @@ class ChoiceScreen(tk.Tk):
     def handle_key_press(self, event):
         # Block all keyboard input if typing is in progress
         if self.typing:
+            print(f"Key press blocked: {event.keysym}")  # Debug message
             return "break"
             
         # Process specific keys
@@ -179,7 +181,7 @@ class ChoiceScreen(tk.Tk):
                 "[Wait] Keep watching silently"
             ]
         elif "[Hold Your Breath]" in selection:
-            new_story = "Your lungs burn as you stay completely still. The footsteps stop."
+            new_story = "Your lungs burn as you stay completely still. The footsteps stop right in front of you."
             new_choices = [
                 "[Exhale Quietly] Release your breath slowly",
                 "[Wait a Little Longer] Push your limits",
@@ -204,71 +206,92 @@ class ChoiceScreen(tk.Tk):
         self.current_selection = 0
         self.update_menu_display()
 
-    # Improved type_text method with proper animation control
+    # FIX: Improved type_text method that properly handles typing state
     def type_text(self, full_text, label, delay=50, callback=None):
-        # Clear existing text and visibly block key input during animation
+        # Clear existing text and block key input during animation
         label.config(text="")
         self.typing = True
         print("Typing started - input blocked")  # Debug message
         
+        # Cancel any existing animation and safety timers
+        self.cancel_timers()
+        
+        # Set safety timeout - ensure typing state gets reset even if animation fails
+        max_animation_time = len(full_text) * delay + 5000  # Added more buffer time
+        self.safety_timer = self.after(max_animation_time, self.reset_typing_state)
+
+        # FIX: Instead of typing full text at once, use a counter to track progress
+        char_count = 0
+        total_chars = len(full_text)
+
+        def inner_type(i=0):
+            nonlocal char_count
+            if i <= len(full_text):
+                label.config(text=full_text[:i])
+                char_count = i
+                self.animation_timer = self.after(delay, inner_type, i + 1)
+            else:
+                # Animation complete
+                if callback:
+                    # Wait a second before calling callback
+                    self.animation_timer = self.after(1000, lambda: self.finish_animation(callback))
+                else:
+                    # Only reset typing state if this is the final animation
+                    self.reset_typing_state()
+
+        inner_type()
+
+    # Helper method to cancel all timers
+    def cancel_timers(self):
         # Cancel any existing animation timer
         if self.animation_timer:
             self.after_cancel(self.animation_timer)
             self.animation_timer = None
         
-        # Set safety timeout - ensure typing gets enabled even if animation fails
-        # Max time = length of text * delay + 2000ms buffer
-        max_animation_time = len(full_text) * delay + 2000
-        safety_timer = self.after(max_animation_time, self.reset_typing_state)
-
-        def inner_type(i=0):
-            if i <= len(full_text):
-                label.config(text=full_text[:i])
-                self.animation_timer = self.after(delay, inner_type, i + 1)
-            else:
-                # Animation complete
-                self.animation_timer = None
-                self.after_cancel(safety_timer)  # Cancel safety timer
-                
-                if callback:
-                    # Wait a second before calling callback
-                    self.animation_timer = self.after(1000, lambda: self.finish_animation(callback))
-                else:
-                    self.reset_typing_state()
-
-        inner_type()
+        # Cancel any existing safety timer
+        if self.safety_timer:
+            self.after_cancel(self.safety_timer)
+            self.safety_timer = None
     
     # Helper method to reset typing state and execute callbacks safely
     def finish_animation(self, callback):
+        # Cancel the safety timer
+        if self.safety_timer:
+            self.after_cancel(self.safety_timer)
+            self.safety_timer = None
+            
+        # Call the provided callback
         try:
             callback()
         except Exception as e:
             print(f"Error in animation callback: {e}")
-        finally:
+            # Make sure we reset typing state in case of an error
             self.reset_typing_state()
     
     # Method to safely reset typing state
     def reset_typing_state(self):
+        # Only print debug message if typing was actually in progress
+        if self.typing:
+            print("Typing ended - input unblocked")  # Debug message
+        
         self.typing = False
         self.animation_timer = None
-        print("Typing ended - input unblocked")  # Debug message
+        self.safety_timer = None
 
-    # Improved type_choices method with proper animation control
+    # FIX: Improved type_choices method that correctly handles typing state
     def type_choices(self, choices, delay=50):
         self.text_label.config(text="")  # Clear existing choices
         self.menu_options = choices
         self.typing = True
         print("Choices typing started - input blocked")  # Debug message
         
-        # Cancel any existing animation timer
-        if self.animation_timer:
-            self.after_cancel(self.animation_timer)
-            self.animation_timer = None
+        # Cancel any existing timers
+        self.cancel_timers()
         
         # Set safety timeout
         total_chars = sum(len(choice) for choice in choices) + len(choices) * 4  # Include formatting chars
-        max_animation_time = total_chars * delay + 2000
-        safety_timer = self.after(max_animation_time, self.reset_typing_state)
+        max_animation_time = total_chars * delay + 5000  # Added more buffer time
+        self.safety_timer = self.after(max_animation_time, self.reset_typing_state)
 
         def type_choice(choice_index=0, char_index=0):
             if choice_index < len(choices):
@@ -283,9 +306,7 @@ class ChoiceScreen(tk.Tk):
                     self.text_label.config(text=current_text + "\n\n")
                     self.animation_timer = self.after(delay, type_choice, choice_index + 1, 0)
             else:
-                # Animation complete
-                self.animation_timer = None
-                self.after_cancel(safety_timer)  # Cancel safety timer
+                # Animation complete - NOW we can reset the typing state
                 self.current_selection = 0
                 self.reset_typing_state()
 
@@ -293,9 +314,8 @@ class ChoiceScreen(tk.Tk):
 
     # Quit the application by closing the window
     def quit_app(self, event=None):
-        # Clean up any pending animation timers
-        if self.animation_timer:
-            self.after_cancel(self.animation_timer)
+        # Clean up any pending timers
+        self.cancel_timers()
         self.destroy()
 
 # Entry point: create an instance of ChoiceScreen and start the main loop
