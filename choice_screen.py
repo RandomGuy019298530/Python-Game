@@ -1,8 +1,5 @@
-# Import the tkinter module to create graphical user interfaces (GUIs)
 import tkinter as tk
-# Import Image and ImageTk from the PIL library to work with images in our app
 from PIL import Image, ImageTk
-# Import os to work with operating system features (though not used here)
 import os
 
 class ChoiceScreen(tk.Tk):
@@ -120,7 +117,7 @@ class ChoiceScreen(tk.Tk):
             self.text_label.config(text="")  # Clear current choices
             self.handle_selection()
         return "break"
-    
+
     def quit_app(self, event=None):
         self.cancel_timers()
         self.destroy()
@@ -136,7 +133,7 @@ class ChoiceScreen(tk.Tk):
 
         # Special disambiguation if needed.
         if tag == "[Follow Path]" and "Step forward!" in selection:
-            tag = "[Follow Path new reality]"
+            tag = "[Follow Path new reality]"  # Placeholder for special handling
 
         # Dictionary mapping tags to (story, choices)
         paths = {
@@ -327,57 +324,39 @@ class ChoiceScreen(tk.Tk):
                 ]
             ),
             "[Trust]": (
-                "Your hand meets the spectral grasp, and in that instant, a surge of blinding light engulfs you. Images of another life—a self both familiar and foreign—flicker before your eyes as you are pulled into a realm of endless possibility.",
-                ["[Follow Path] Follow the alternate version of yourself into the unknown"]
+                "As your fingers brush against the figure's hand, a jolt of icy energy surges through you. The light intensifies, but instead of warmth, it burns with malevolent intent. The figure's features sharpen, revealing a cruel, gaunt face with eyes that gleam with dark amusement. A voice, cold as a crypt, echoes in your mind: 'It's already to late.'",
+                ["[Submit] Accept your fate", "[Fight] Struggle against the inevitable"]
             ),
             "[Fight]": (
-                "You steel yourself, ready to confront the apparition. But as you raise your arm, the world shimmers and warps. The figure dissolves into a cascade of fragmented images, leaving you to wonder if resistance was ever truly an option.",
-                ["[Follow Path] Step forward into the swirling unknown"]
+                "You steel yourself, ready to confront the apparition. But as you raise your arm, the world shimmers and warps. The figure dissolves into a cascade of fragmented images, but a chilling laughter lingers in the air...",
+                ["[Resist] Fight against what is coming"]
             ),
-            "[Follow Path]": (
-                "Your senses are overwhelmed, the world shatters, and then suddenly, it stops..\n"
-                "You've escaped. But what was that place? Who was the figure, truly?\n",
-                ["[To Be Continued] Continue on your journey"]
+            "[Submit]": (
+                "A wave of despair washes over you as you relinquish control. The figure's grip tightens, and the world dissolves into a kaleidoscope of terrifying visions. You feel your essence being consumed, your identity fading into nothingness. There is only the figure now, and the endless, silent void.",
+                ["[End]"]
             ),
-            "[Follow Path new reality]": (
-                "Your senses are overwhelmed, the world shatters, and then suddenly, it stops..\n"
-                "You've escaped. But what was that place? Who was the figure, truly?\n",
-                ["[To Be Continued] Embrace this new beginning"]
+            "[Resist]": (
+                "You fight with every fiber of your being, but the power arrayed against you is immense. The fragmented images coalesce once more, forming a horrifying visage of pure malice. With a final, triumphant shriek, the figure unleashes a wave of energy. Blackness consumes you, but even in the void, you sense that this is not the end.",
+                ["[End]"]
             ),
-            "[Enter Passage]": (
-                "Summoning your courage, you enter the narrow passage. The air grows colder with each step, and ancient symbols seem to pulse with an eerie, hidden life. "
-                "The corridor leads you to a threshold between the world you knew and another, more unsettling realm.",
-                ["[Follow Path] Step forward into this altered reality"]
-            ),
-            "[To Be Continued]": (
-                "Chapter 2 coming soon!",
-                ["[Quit] Exit the game"]
-            ),
-            "[Quit]": (
-                "Thank you for playing. May the shadows guide you...",
-                []
+            "[End]": (
+                "The darkness is absolute. Your journey is over, but your story...your story is not your own anymore.",
+                [""]
             )
         }
 
-        # Look up the branch by the extracted tag.
-        if tag in paths:
-            new_story, new_choices = paths[tag]
-        else:
-            new_story = ("An unexpected error has occurred. This path seems uncharted. "
-                         "If the darkness continues, perhaps it's time to quit.")
-            new_choices = ["[Quit] Exit the game"]
-
-        # Debug: print the tag and resulting story branch
+        # Retrieve the story and choices for the given tag
+        story, choices = paths.get(tag, ("Nothing happens.", []))
         print("Selected tag:", tag)
-        print("New story:", new_story)
-        print("New choices:", new_choices)
+        print("New story:", story)
+        print("New choices:", choices)
 
         # If the branch is [Quit], type the final message then quit the app.
         if tag == "[Quit]":
-            self.type_text(new_story, self.story_label, callback=lambda: self.after(2000, self.quit_app))
+            self.type_text(story, self.story_label, callback=lambda: self.after(2000, self.quit_app))
         else:
-            # Otherwise, animate the new story and then the new choices.
-            self.type_text(new_story, self.story_label, callback=lambda: self.type_choices(new_choices))
+            # Animate the new story and then the new choices.
+            self.type_text(story, self.story_label, callback=lambda: self.type_choices(choices))
 
     def set_new_choices(self, new_choices):
         self.menu_options = new_choices
@@ -455,10 +434,6 @@ class ChoiceScreen(tk.Tk):
                 self.current_selection = 0
                 self.reset_typing_state()
         type_choice()
-
-    def quit_app(self, event=None):
-        self.cancel_timers()
-        self.destroy()
 
 if __name__ == "__main__":
     ChoiceScreen().mainloop()
