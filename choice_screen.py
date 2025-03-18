@@ -1,27 +1,21 @@
 import tkinter as tk
 from PIL import Image, ImageTk
-import os
 
 class ChoiceScreen(tk.Tk):
     def __init__(self):
-        super().__init__()  # Set up the main window
-
-        # Configure the main window
-        self.title("Python Game Yay")
+        super().__init__()
+        self.title("Corridors")
         self.geometry("1020x1020")
-        self.configure(bg="black")
+        self.configure(background='black')
 
-        # Initialize game state and input flag
-        self.menu_options = []         # List to store menu choices
-        self.current_selection = 0     # Index for current choice
-        self.typing = False            # Flag to block key input during text animation
-        self.animation_timer = None    # Reference to animation timer for cleanup
-        self.safety_timer = None       # Reference to safety timer for cleanup
+        # Game state
+        self.menu_options = []
+        self.current_selection = 0
+        self.typing = False
+        self.animation_timer = None
+        self.safety_timer = None
 
-        # Load the background image
-        self.load_background_image()
-
-        # Create a label for displaying the story text
+        # Label for story text
         self.story_label = tk.Label(
             self,
             text="",
@@ -33,7 +27,7 @@ class ChoiceScreen(tk.Tk):
         )
         self.story_label.place(relx=0.5, rely=0.3, anchor="center")
 
-        # Create a label for displaying menu choices
+        # Label for menu choices
         self.text_label = tk.Label(
             self,
             text="",
@@ -42,40 +36,24 @@ class ChoiceScreen(tk.Tk):
             font=("Courier", 16, "bold"),
             wraplength=800,
             justify="left",
-            anchor="w"
         )
-        self.text_label.place(relx=0.1, rely=0.6, anchor="w")
+        self.text_label.place(relx=0.5, rely=0.6, anchor="center")
 
-        # Bind all key presses to our centralized key handler
         self.bind("<Key>", self.handle_key_press)
-
-        # Start the game by displaying the title screen
         self.show_title_screen()
 
     def handle_key_press(self, event):
-        # Block input if a typing animation is in progress
         if self.typing:
-            print(f"Key press blocked: {event.keysym}")
             return "break"
         if event.keysym == "Up":
-            return self.navigate_up(event)
+            return self.navigate_up()
         elif event.keysym == "Down":
-            return self.navigate_down(event)
+            return self.navigate_down()
         elif event.keysym == "Return":
-            return self.select_option(event)
+            return self.select_option()
         elif event.keysym == "Escape":
-            return self.quit_app(event)
+            return self.quit_app()
         return None
-
-    def load_background_image(self):
-        try:
-            img = Image.open("background-image.png").convert("RGBA")
-            self.background_image = ImageTk.PhotoImage(img.resize((1020, 1020)))
-            bg_label = tk.Label(self, image=self.background_image)
-        except FileNotFoundError:
-            bg_label = tk.Label(self, bg="black")
-        bg_label.place(x=0, y=0, relwidth=1, relheight=1)
-        bg_label.lower()
 
     def show_title_screen(self):
         initial_story = (
@@ -93,13 +71,13 @@ class ChoiceScreen(tk.Tk):
         self.type_text(initial_story, self.story_label,
                        callback=lambda: self.type_choices(initial_choices))
 
-    def navigate_up(self, event=None):
+    def navigate_up(self):
         if self.menu_options:
             self.current_selection = (self.current_selection - 1) % len(self.menu_options)
             self.update_menu_display()
         return "break"
 
-    def navigate_down(self, event=None):
+    def navigate_down(self):
         if self.menu_options:
             self.current_selection = (self.current_selection + 1) % len(self.menu_options)
             self.update_menu_display()
@@ -112,30 +90,23 @@ class ChoiceScreen(tk.Tk):
         )
         self.text_label.config(text=menu_text)
 
-    def select_option(self, event=None):
+    def select_option(self):
         if self.menu_options:
             self.text_label.config(text="")  # Clear current choices
             self.handle_selection()
         return "break"
 
-    def quit_app(self, event=None):
+    def quit_app(self):
         self.cancel_timers()
         self.destroy()
 
     def handle_selection(self):
-        # Extract the tag from the selected option.
         selection = self.menu_options[self.current_selection]
-        print("Handling selection:", selection)
         try:
             tag = selection.split(']')[0] + ']'
         except Exception:
             tag = selection
 
-        # Special disambiguation if needed.
-        if tag == "[Follow Path]" and "Step forward!" in selection:
-            tag = "[Follow Path new reality]"  # Placeholder for special handling
-
-        # Dictionary mapping tags to (story, choices)
         paths = {
             "[Look Around]": (
                 "You reach out into the darkness and run your hand along the cold, damp wall. Your fingertips graze something uneven — a door, barely ajar. "
@@ -185,7 +156,7 @@ class ChoiceScreen(tk.Tk):
                 "You decide it might be nothing, but the uneasy feeling lingers. The room feels colder now, and you wonder if you missed something important.",
                 [
                     "[Search the Room] Try searching the room again",
-                    "[Call Out] Attempt to break the silence"
+                    "[Call Out] Attempt to communicate with the darkness"
                 ]
             ),
             "[Open Cavity]": (
@@ -324,7 +295,7 @@ class ChoiceScreen(tk.Tk):
                 ]
             ),
             "[Trust]": (
-                "As your fingers brush against the figure's hand, a jolt of icy energy surges through you. The light intensifies, but instead of warmth, it burns with malevolent intent. The figure's features sharpen, revealing a cruel, gaunt face with eyes that gleam with dark amusement. A voice, cold as a crypt, echoes in your mind: 'It's already to late.'",
+                "As your fingers brush against the figure's hand, a jolt of icy energy surges through you. The light intensifies, but instead of warmth, it burns with malevolent intent. The figure's features sharpen, revealing a cruel, gaunt face with eyes that gleam with dark amusement. A voice, cold as a crypt, echoes in your mind: 'It's already too late.'",
                 ["[Submit] Accept your fate", "[Fight] Struggle against the inevitable"]
             ),
             "[Fight]": (
@@ -345,28 +316,12 @@ class ChoiceScreen(tk.Tk):
             )
         }
 
-        # Retrieve the story and choices for the given tag
-        story, choices = paths.get(tag, ("Nothing happens.", []))
-        print("Selected tag:", tag)
-        print("New story:", story)
-        print("New choices:", choices)
-
-        # If the branch is [Quit], type the final message then quit the app.
-        if tag == "[Quit]":
-            self.type_text(story, self.story_label, callback=lambda: self.after(2000, self.quit_app))
-        else:
-            # Animate the new story and then the new choices.
-            self.type_text(story, self.story_label, callback=lambda: self.type_choices(choices))
-
-    def set_new_choices(self, new_choices):
-        self.menu_options = new_choices
-        self.current_selection = 0
-        self.update_menu_display()
+        story, choices = paths.get(tag, ("Nothing happens. Perhaps you should get Oliver M to code it.", []))
+        self.type_text(story, self.story_label, callback=lambda: self.type_choices(choices))
 
     def type_text(self, full_text, label, delay=50, callback=None):
         label.config(text="")
         self.typing = True
-        print("Typing started - input blocked")
         self.cancel_timers()
         max_animation_time = len(full_text) * delay + 5000
         self.safety_timer = self.after(max_animation_time, self.reset_typing_state)
@@ -375,7 +330,7 @@ class ChoiceScreen(tk.Tk):
         def inner_type(i=0):
             if i <= total_chars:
                 label.config(text=full_text[:i])
-                self.animation_timer = self.after(delay, inner_type, i+1)
+                self.animation_timer = self.after(delay, inner_type, i + 1)
             else:
                 if callback:
                     self.animation_timer = self.after(1000, lambda: self.finish_animation(callback))
@@ -395,15 +350,9 @@ class ChoiceScreen(tk.Tk):
         if self.safety_timer:
             self.after_cancel(self.safety_timer)
             self.safety_timer = None
-        try:
-            callback()
-        except Exception as e:
-            print(f"Error in animation callback: {e}")
-            self.reset_typing_state()
+        callback()
 
     def reset_typing_state(self):
-        if self.typing:
-            print("Typing ended - input unblocked")
         self.typing = False
         self.animation_timer = None
         self.safety_timer = None
@@ -412,7 +361,6 @@ class ChoiceScreen(tk.Tk):
         self.text_label.config(text="")
         self.menu_options = choices
         self.typing = True
-        print("Choices typing started - input blocked")
         self.cancel_timers()
         total_chars = sum(len(choice) for choice in choices) + len(choices) * 4
         max_animation_time = total_chars * delay + 5000
@@ -426,10 +374,10 @@ class ChoiceScreen(tk.Tk):
                 if char_index < len(choices[choice_index]):
                     current_text += choices[choice_index][char_index]
                     self.text_label.config(text=current_text)
-                    self.animation_timer = self.after(delay, type_choice, choice_index, char_index+1)
+                    self.animation_timer = self.after(delay, type_choice, choice_index, char_index + 1)
                 else:
                     self.text_label.config(text=current_text + "\n\n")
-                    self.animation_timer = self.after(delay, type_choice, choice_index+1, 0)
+                    self.animation_timer = self.after(delay, type_choice, choice_index + 1, 0)
             else:
                 self.current_selection = 0
                 self.reset_typing_state()
