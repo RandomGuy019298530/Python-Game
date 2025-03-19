@@ -2,7 +2,7 @@ import tkinter as tk
 from PIL import Image, ImageTk
 import importlib
 
-class ChoiceScreen(tk.Tk):
+class TitleScreen(tk.Tk):
     def __init__(self):
         super().__init__()
         self.title("Corridors")
@@ -16,6 +16,10 @@ class ChoiceScreen(tk.Tk):
         self.animation_timer = None
         self.safety_timer = None
 
+        # Label for image
+        self.image_label = tk.Label(self, bg="black")
+        self.image_label.place(relx=0.5, rely=0.35, anchor="center")  # Position above the story text
+
         # Label for story text
         self.story_label = tk.Label(
             self,
@@ -26,7 +30,7 @@ class ChoiceScreen(tk.Tk):
             wraplength=900,
             justify="left"
         )
-        self.story_label.place(relx=0.5, rely=0.3, anchor="center")
+        self.story_label.place(relx=0.5, rely=0.35, anchor="center")
 
         # Label for menu choices
         self.text_label = tk.Label(
@@ -40,7 +44,8 @@ class ChoiceScreen(tk.Tk):
         )
         self.text_label.place(relx=0.5, rely=0.6, anchor="center")
 
-        self.bind("<Key>", self.handle_key_press)
+        # Use lambda to properly bind the instance method
+        self.bind("<Key>", lambda event: self.handle_key_press(event))
         self.show_title_screen()
 
     def handle_key_press(self, event):
@@ -57,7 +62,17 @@ class ChoiceScreen(tk.Tk):
         return None
 
     def show_title_screen(self):
-        initial_story = "Welcome to Corridors!"
+        # Load and display the image
+        try:
+            image = Image.open("background-image.png")  # Replace with your image path
+            image = image.resize((400, 300), Image.LANCZOS)
+            self.photo = ImageTk.PhotoImage(image)
+            self.image_label.config(image=self.photo)
+        except Exception as e:
+            print(f"Failed to load image: {e}")
+
+        # Display the welcome text
+        initial_story = ""
         initial_choices = [
             "[Start] Start the game",
             "[Exit] Close the game",
@@ -102,7 +117,6 @@ class ChoiceScreen(tk.Tk):
             tag = selection
 
         if tag == "[Start]":
-            # Quit current instance and launch new mainloop
             self.quit_app()
             importlib.import_module("choice_screen").ChoiceScreen().mainloop()
         elif tag == "[Exit]":
@@ -113,7 +127,8 @@ class ChoiceScreen(tk.Tk):
             self.type_text(story, self.story_label,
                            callback=lambda: self.type_choices(choices))
 
-    def type_text(self, full_text, label, delay=50, callback=None):
+    def type_text(self, full_text, label, delay=80, callback=None):
+        """Displays text character by character."""
         label.config(text="")
         self.typing = True
         self.cancel_timers()
@@ -151,7 +166,8 @@ class ChoiceScreen(tk.Tk):
         self.animation_timer = None
         self.safety_timer = None
 
-    def type_choices(self, choices, delay=50):
+    def type_choices(self, choices, delay=80):
+        """Displays choices character by character."""
         self.text_label.config(text="")
         self.menu_options = choices
         self.typing = True
@@ -170,7 +186,9 @@ class ChoiceScreen(tk.Tk):
                     self.text_label.config(text=current_text)
                     self.animation_timer = self.after(delay, type_choice, choice_index, char_index + 1)
                 else:
-                    self.text_label.config(text=current_text + "\n\n")
+                    if choice_index < len(choices) - 1:
+                        current_text += "\n\n"
+                    self.text_label.config(text=current_text)
                     self.animation_timer = self.after(delay, type_choice, choice_index + 1, 0)
             else:
                 self.current_selection = 0
@@ -178,4 +196,5 @@ class ChoiceScreen(tk.Tk):
         type_choice()
 
 if __name__ == "__main__":
-    ChoiceScreen().mainloop()
+    TitleScreen().mainloop() 
+    

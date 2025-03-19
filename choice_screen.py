@@ -1,5 +1,7 @@
 import tkinter as tk
 from PIL import Image, ImageTk
+import importlib
+import os
 
 class ChoiceScreen(tk.Tk):
     def __init__(self):
@@ -96,7 +98,7 @@ class ChoiceScreen(tk.Tk):
             self.handle_selection()
         return "break"
 
-    def quit_app(self):
+    def quit_app(self, event=None):
         self.cancel_timers()
         self.destroy()
 
@@ -319,7 +321,8 @@ class ChoiceScreen(tk.Tk):
         story, choices = paths.get(tag, ("Nothing happens. Perhaps you should get Oliver M to code it.", []))
         self.type_text(story, self.story_label, callback=lambda: self.type_choices(choices))
 
-    def type_text(self, full_text, label, delay=50, callback=None):
+    def type_text(self, full_text, label, delay=80, callback=None):
+        """Displays text character by character."""
         label.config(text="")
         self.typing = True
         self.cancel_timers()
@@ -357,7 +360,8 @@ class ChoiceScreen(tk.Tk):
         self.animation_timer = None
         self.safety_timer = None
 
-    def type_choices(self, choices, delay=50):
+    def type_choices(self, choices, delay=80):
+        """Displays choices character by character."""
         self.text_label.config(text="")
         self.menu_options = choices
         self.typing = True
@@ -376,7 +380,9 @@ class ChoiceScreen(tk.Tk):
                     self.text_label.config(text=current_text)
                     self.animation_timer = self.after(delay, type_choice, choice_index, char_index + 1)
                 else:
-                    self.text_label.config(text=current_text + "\n\n")
+                    if choice_index < len(choices) - 1:
+                        current_text += "\n\n"
+                    self.text_label.config(text=current_text)
                     self.animation_timer = self.after(delay, type_choice, choice_index + 1, 0)
             else:
                 self.current_selection = 0
